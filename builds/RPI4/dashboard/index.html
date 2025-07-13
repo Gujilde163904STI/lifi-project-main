@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPI4 Li-Fi Network Monitor</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2a2a2a;
+            --text-color: #e0e0e0;
+            --border-color: #444;
+            --header-color: #00aaff;
+            --status-ok: #28a745;
+            --status-warn: #ffc107;
+            --status-crit: #dc3545;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        h1 {
+            color: var(--header-color);
+            margin: 0;
+        }
+        #last-updated {
+            font-size: 0.9em;
+            color: #888;
+        }
+        main {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            color: var(--header-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        #summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+        .summary-item h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+            color: #aaa;
+        }
+        .summary-item p {
+            margin: 0;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        #system-status.ok { color: var(--status-ok); }
+        #system-status.warn { color: var(--status-warn); }
+        #system-status.crit { color: var(--status-crit); }
+        #device-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #device-list th, #device-list td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #device-list th {
+            background-color: #333;
+        }
+        .risk-low { color: var(--status-ok); }
+        .risk-medium { color: var(--status-warn); }
+        .risk-high { color: var(--status-crit); }
+        .risk-low::before, .risk-medium::before, .risk-high::before {
+            content: '●';
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Li-Fi Network Monitor</h1>
+        <p>Real-time analytics from RPI4 Aggregation Node</p>
+        <span id="last-updated"></span>
+    </header>
+    <main>
+        <div id="summary" class="card">
+            <h2>Network Summary</h2>
+            <div id="summary-grid">
+                <div class="summary-item">
+                    <h3>System Status</h3>
+                    <p id="system-status">--</p>
+                </div>
+                <div class="summary-item">
+                    <h3>Active Devices</h3>
+                    <p id="active-devices">--</p>
+                </div>
+                <div class="summary-item">
+                    <h3>High-Risk Alerts</h3>
+                    <p id="high-risk-alerts">--</p>
+                </div>
+                <div class="summary-item">
+                    <h3>Packets Processed</h3>
+                    <p id="packets-processed">--</p>
+                </div>
+            </div>
+        </div>
+        <div id="device-list" class="card">
+            <h2>Device Health</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Device ID</th>
+                        <th>Failure Risk</th>
+                        <th>Error Count</th>
+                        <th>Last Seen</th>
+                    </tr>
+                </thead>
+                <tbody id="device-table-body">
+                    <tr><td colspan="4" style="text-align:center;">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script>
+        const REFRESH_RATE = 2000; // ms
+
+        function fetchData() {
+            fetch('/api/status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateDashboard(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('system-status').textContent = 'OFFLINE';
+                    document.getElementById('system-status').className = 'crit';
+                    document.getElementById('device-table-body').innerHTML = `<tr><td colspan="4" style="text-align:center;">Could not connect to server. Is the firmware running?</td></tr>`;
+                });
+        }
+
+        function updateDashboard(data) {
+            // Update summary
+            const statusEl = document.getElementById('system-status');
+            statusEl.textContent = data.systemStatus;
+            if (data.systemStatus.includes('High-Risk')) {
+                statusEl.className = 'crit';
+            } else {
+                statusEl.className = 'ok';
+            }
+            
+            document.getElementById('active-devices').textContent = data.activeDevices.length;
+            document.getElementById('packets-processed').textContent = data.totalPacketsProcessed;
+            document.getElementById('last-updated').textContent = `Last Updated: ${new Date(data.timestamp).toLocaleString()}`;
+
+            // Update device table
+            const tableBody = document.getElementById('device-table-body');
+            tableBody.innerHTML = '';
+            
+            if (data.activeDevices.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No active devices detected.</td></tr>`;
+                return;
+            }
+
+            let highRiskCount = 0;
+            data.activeDevices.sort((a, b) => a.deviceId.localeCompare(b.deviceId)).forEach(device => {
+                if (device.failureRisk === 'high') highRiskCount++;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${device.deviceId}</td>
+                    <td class="risk-${device.failureRisk.toLowerCase()}">${device.failureRisk}</td>
+                    <td>${device.errorCount}</td>
+                    <td>${device.lastSeen}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            document.getElementById('high-risk-alerts').textContent = highRiskCount;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            setInterval(fetchData, REFRESH_RATE);
+        });
+    </script>
+</body>
+</html>

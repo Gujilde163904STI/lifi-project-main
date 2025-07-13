@@ -1,0 +1,25 @@
+{
+  "deviceId": "RPI4-AGG-001",
+  "deviceName": "Data Aggregation & Analytics Node",
+  "network": {
+    "channel": 2,
+    "mode": "master",
+    "securityLevel": "WPA3-Enterprise"
+  },
+  "apiEndpoints": {
+    "dataIngest": "https://api.lifi-system.com/v2/data",
+    "statusReport": "https://api.lifi-system.com/v2/status",
+    "analyticsIngest": "https://api.lifi-system.com/v2/analytics"
+  },
+  "logLevel": "debug",
+  "enabledPlugins": [
+    "predictive-maintenance"
+  ],
+  "dashboard": {
+    "port": 3000,
+    "refreshRateMs": 2000
+  },
+  "simulation": {
+    "packetIntervalMs": 1000
+  }
+}

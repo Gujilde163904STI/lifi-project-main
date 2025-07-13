@@ -1,0 +1,20 @@
+{
+  "deviceId": "RPI3-NODE-001",
+  "deviceName": "Primary Gateway Node",
+  "network": {
+    "channel": 1,
+    "mode": "master",
+    "securityLevel": "WPA2-PSK"
+  },
+  "apiEndpoints": {
+    "dataIngest": "https://api.lifi-system.com/v1/data",
+    "statusReport": "https://api.lifi-system.com/v1/status"
+  },
+  "logLevel": "info",
+  "enabledPlugins": [
+    "packet-analyzer"
+  ],
+  "simulation": {
+      "packetIntervalMs": 2000
+  }
+}

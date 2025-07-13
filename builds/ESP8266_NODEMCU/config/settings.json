@@ -1,0 +1,12 @@
+{
+  "deviceId": "NODEMCU-RPT-004",
+  "deviceName": "Li-Fi Repeater Unit",
+  "network": {
+    "mode": "client",
+    "masterNodeId": "RPI3-NODE-001"
+  },
+  "logLevel": "info",
+  "simulation": {
+    "relayIntervalMs": 5000
+  }
+}

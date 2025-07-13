@@ -1,0 +1,12 @@
+{
+  "deviceId": "ESP8266-NODE-017",
+  "deviceName": "Field Sensor Unit",
+  "network": {
+    "mode": "client",
+    "masterNodeId": "RPI3-NODE-001"
+  },
+  "logLevel": "info",
+  "simulation": {
+    "dataIntervalMs": 3000
+  }
+}
